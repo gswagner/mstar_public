@@ -617,9 +617,9 @@ class CBS_Planner(object):
                 t_init_pos = tuple([init_pos[bot] for bot in bots])
                 t_goals = tuple([self.goals[bot] for bot in bots])
                 if self.meta_planner == 'op_decomp':
-                    assert('False')
+                    assert(False)
                 elif self.meta_planner == 'epea':
-                    assert('False')
+                    assert(False)
                 elif self.meta_planner in ['od_rmstar', 'epermstar']:
                     # First time this set of constraints has been found.
                     # Adding the rmstar planner to sub_search, so if the

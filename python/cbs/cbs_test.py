@@ -810,7 +810,7 @@ class TestMetaCBSPlanner(unittest.TestCase):
         self.obs_map = [[0 for i in xrange(10)] for j in xrange(10)]
         self.empty_con = cbs.con_empty_constraint((0, ))
         self.merge_thresh = MERGE_THRESH
-        self.planners = ['od_rmstar' , 'op_decomp', 'epea', 'epermstar' ]
+        self.planners = ['od_rmstar', 'epermstar']
 
     def test_single_robot_path(self):
         """test that the CBS planner can still handle single robot problems"""
