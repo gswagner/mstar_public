@@ -355,7 +355,8 @@ def compute_cost(path):
 
 
 def find_path(obs_map, init_pos, goals, conn_8=False, meta_agents=False,
-              merge_thresh=10, meta_planner='op_decomp', time_limit=5 * 60):
+              merge_thresh=10, meta_planner='op_decomp', time_limit=5 * 60,
+              sum_of_costs=False):
     """Finds a path using CBS or MA-CBS
 
     obs_map      - list of lists specifying obstacle positions, as per
@@ -372,6 +373,7 @@ def find_path(obs_map, init_pos, goals, conn_8=False, meta_agents=False,
                    'epermstar'
     time_limit   - maximum time to search for a solution before raising
                    an error
+    sum_of_costs - use sum of costs metric
 
     returns -
     path in the joint configuration graph
@@ -381,28 +383,38 @@ def find_path(obs_map, init_pos, goals, conn_8=False, meta_agents=False,
     OutOfTimeError  - if could not find a solution in the allowed time
     """
     p = CBS_Planner(obs_map, goals, conn_8=conn_8, meta_agents=meta_agents,
-                    merge_thresh=merge_thresh, meta_planner=meta_planner)
+                    merge_thresh=merge_thresh, meta_planner=meta_planner,
+                    sum_of_costs=sum_of_costs)
     return p.find_solution(init_pos, time_limit)
 
 
 # TODO: NEED TO DETERMINE HOW TO HANDLE COLLISION COUNT AFTER AGENTS ARE
 # MERGED
 class CBS_Planner(object):
-    """Top level planner for performing CBS search.  Will also have
-    support for MA-CBS"""
+    """Top level planner for performing CBS and MA-CBS search
+
+    By default, each agent incurs cost 1 for every action except for
+    waiting at its goal, which incurs cost 0.  Alternatively, can use
+    the sum-of-costs formulation, where a robot incurs cost equal to the
+    time until it reaches its goal for the last time and stays there
+    from then on out
+    """
     def __init__(self, obs_map, goals, sub_search=None, conn_8=False,
-                 meta_agents=False, merge_thresh=1, meta_planner='op_decomp'):
-        """obs_map      - list of lists specifying obstacle positions,
-                          as per workspace graph
-           goals        - [p1, p2, .., pn] list of goal positions
-           sub_search   - specifies individual robot planners
-           conn_8       - whether to use an 8-connected graph instead of
-                          a 4-connected  graph
-           meta_agents  - whether to use meta_agents
-           merge_thresh - number of collisions before merging
-           meta_planner - which coupled planner to use, options are
-                          'od_rmstar' and 'epermstar'
-           """
+                 meta_agents=False, merge_thresh=1, meta_planner='op_decomp',
+                 sum_of_costs=False):
+        """
+        obs_map      - list of lists specifying obstacle positions,
+                       as per workspace graph
+        goals        - [p1, p2, .., pn] list of goal positions
+        sub_search   - specifies individual robot planners
+        conn_8       - whether to use an 8-connected graph instead of
+                       a 4-connected  graph
+        meta_agents  - whether to use meta_agents
+        merge_thresh - number of collisions before merging
+        meta_planner - which coupled planner to use, options are
+                       'od_rmstar' and 'epermstar'
+        sum_of_costs - use the sum of costs formulation
+        """
         self.obs_map = obs_map
         self.goals = tuple(map(tuple, goals))
         self.conn_8 = conn_8
@@ -416,6 +428,7 @@ class CBS_Planner(object):
         # dictionary, for easy constant time inclusion tests
         self.closed = {}
         self.meta_planner = meta_planner
+        self.sum_of_costs = sum_of_costs
         assert self.meta_planner in [None, 'od_rmstar', 'op_decomp', 'epea',
                                      'epermstar']
         # Counts the number of collisions for determining when to merge
@@ -603,7 +616,8 @@ class CBS_Planner(object):
                             self.obs_map, init_pos[bots], self.goals[bots],
                             con, sub_search=self.sub_search,
                             conn_8=self.conn_8, out_paths=out_paths,
-                            time_limit=time_limit - timer.time() + temp_time)
+                            time_limit=time_limit - timer.time() + temp_time,
+                            sum_of_costs=self.sum_of_costs)
                 if first_pass:
                     if out_paths == None:
                         # out_paths = path

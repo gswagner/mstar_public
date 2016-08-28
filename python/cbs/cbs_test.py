@@ -803,6 +803,24 @@ class TestCBSPlanner(unittest.TestCase):
         print 'time elapsed: %g' %(time.time()-start_time)
 
 
+class TestSumOfCostsCBS(unittest.TestCase):
+    """Tests CBS running the sum-of-costs metric"""
+
+    def test_CBS_sum_of_costs(self):
+        obs_map = [[0 for i in xrange(20)] for j in xrange(20)]
+        for x in xrange(1, 18):
+            for y in xrange(1, 2):
+                obs_map[x][y] = 1
+        path = cbs.find_path(obs_map, ((0, 0), (17, 0)), ((19, 0), (17, 0)),
+                             meta_agents=False, time_limit=20,
+                             sum_of_costs=False)
+        print len(path)
+        path = cbs.find_path(obs_map, ((0, 0), (17, 0)), ((19, 0), (17, 0)),
+                             meta_agents=False, time_limit=20,
+                             sum_of_costs=True)
+        print len(path)
+
+
 # @unittest.skip('message goes here')
 class TestMetaCBSPlanner(unittest.TestCase):
     def setUp(self):
@@ -1308,6 +1326,13 @@ class TestConstrainedEPErMstarPlanner(unittest.TestCase):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Runs test suite for cbs')
+    parser.add_argument('tests', nargs='*', help='Specific tests to run.  ' +
+                        'By default, will run all but the long tests.  ' +
+                        'Tests to run are specified by ' +
+                        'TestCase.test_function.  You can run all tests in ' +
+                        'a given test case by just specifying TestCase' +
+                        'Overrides any test specification flags, so will ' +
+                        'run the map tests')
     parser.add_argument('-v', dest='verbosity', action='store_const', const=2, 
                         default=1, help='verbose output')
     parser.add_argument('-f', dest='full_test', action='store_true', 
@@ -1333,12 +1358,20 @@ if __name__ == '__main__':
     MERGE_THRESH = args.merge_thresh
     COD_rMSTAR_FULL = args.cod_rmstar_full
     CEPErMSTAR_FULL = args.cepermstar_full
-    sys.argv = ['cbs_test.py']
-    unittest.main(verbosity=args.verbosity)
-    # cur_module = __import__('__main__')
-    # suite = unittest.TestLoader().loadTestsFromModule(cur_module)
-    # unittest.TextTestRunner(verbosity=args.verbosity).debug(suite)
-
-    # suite = unittest.TestLoader().loadTestsFromTestCase(
-    #                                   TestCBSConstraintFunctions)
-    # unittest.TextTestRunner(verbosity=3).run(suite)
+    modules = [sys.modules[__name__]]
+    if args.tests:
+        # Have a list of tests that we want to run
+        for mod in modules:
+            try:
+                suite = unittest.TestLoader().loadTestsFromNames(
+                    args.tests, module=mod)
+            except AttributeError:
+                # Not in this module
+                continue
+            break
+        else:
+            raise ValueError('Specified test does not exist')
+        unittest.TextTestRunner(verbosity=args.verbosity).run(suite)
+    else:
+        sys.argv = ['cbs_test.py']
+        unittest.main(verbosity=args.verbosity)
