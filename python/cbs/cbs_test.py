@@ -7,6 +7,7 @@ import sys
 import cbs
 import constrained_od_mstar
 import constrained_planner
+import ipdb
 
 """Unit test suite for cbs"""
 
@@ -384,7 +385,9 @@ class TestConstraintPlanner(unittest.TestCase):
         self.assertTrue(path[:3] == ((0, 0), (1, 0), (1, 1)) or
                         path[:3] == ((0, 0), (0, 1), (1, 1)))
 
+
 class TestForwardsConstraintPlanner(unittest.TestCase):
+
     def setUp(self):
         """Is called before every test function is run"""
         self.obs_map = [[0 for i in xrange(10)] for j in xrange(10)]
@@ -546,6 +549,40 @@ class TestForwardsConstraintPlanner(unittest.TestCase):
         p = constrained_planner.Constrained_Planner(self.obs_map, [0, 0], 
                                                     [2, 0], con)
         self.assertTrue(p.get_step((2, 9, 11)) == (2, 8, 12))
+
+
+class TestSum_Of_Costs_Constrained_Forwards_Planner(unittest.TestCase):
+
+    def setUp(self):
+        """Is called before every test function is run"""
+        self.obs_map = [[0 for i in xrange(10)] for j in xrange(10)]
+        self.con = cbs.con_empty_constraint([1])
+
+    def test_delay_cost(self):
+        con = cbs.con_add_node_constraint(self.con, 5, (0, 0))
+
+        p = constrained_planner.Sum_Of_Cost_Constrained_Forwards_Planner(
+            self.obs_map, (0, 0), (0, 0), con)
+        path, cost = p.find_path(time_limit=10)
+        self.assertTrue(cost == 6)
+
+        p = constrained_planner.Constrained_Forwards_Planner(
+            self.obs_map, (0, 0), (0, 0), con)
+        path, cost = p.find_path(time_limit=10)
+        self.assertTrue(cost == 2)
+
+        # Check with two sequential constraints
+        con = cbs.con_add_node_constraint(con, 10, (0, 0))
+
+        p = constrained_planner.Sum_Of_Cost_Constrained_Forwards_Planner(
+            self.obs_map, (0, 0), (0, 0), con)
+        path, cost = p.find_path(time_limit=10)
+        self.assertTrue(cost == 11)
+
+        p = constrained_planner.Constrained_Forwards_Planner(
+            self.obs_map, (0, 0), (0, 0), con)
+        path, cost = p.find_path(time_limit=10)
+        self.assertTrue(cost == 4)
 
 class TestPathValidation(unittest.TestCase):
     # def setUp(self):
