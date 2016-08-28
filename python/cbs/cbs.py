@@ -278,68 +278,6 @@ def con_to_single_robot(constraint):
             con_get_robots(constraint)]
 
 
-def validate_solution(solution):
-    """Takes in a path in the full configuration space and tests whether
-    it is valid.
-
-    Will only check that no collisions exist, and will not
-    check that all edges should exist, due to either connectivity or
-    presence of obstacles
-
-    solution - [[coord1, coord2, ...], ...] list of joint configuration
-               coordinates defining a path
-
-    returns:
-    True if valid, False if robot-robot collisions occur
-    """
-    # Decompose joint path so it can be passed to validate path pair
-    paths = [[(tuple(solution[dex][rob]), ) for dex in xrange(len(solution))]
-               for rob in xrange(len(solution[0]))]
-    for i in xrange(len(paths) - 1):
-        for j in xrange(i + 1, len(paths)):
-            if validate_path_pair(paths[i], (i, ), paths[j], (j, )) != None:
-                return False
-    return True
-
-
-def interactive_validate_solution(solution):
-    """Takes in a path in the full configuration space and tests whether
-    it is valid, printing conflicts to stdout.
-
-    Will only check that no collisions exist, and will not check that
-    all edges should exist, due to either connectivity or presence of
-    obstacles
-
-    solution - [[coord1, coord2, ...], ...] list of joint configuration
-               coordinates defining a path
-
-    returns:
-    True if valid, False if robot-robot collisions occur
-    """
-    # Decompose joint path so it can be passed to validate path pair
-    paths = [[(tuple(solution[dex][rob]), ) for dex in xrange(len(solution))]
-               for rob in xrange(len(solution[0]))]
-    for i in xrange(len(paths) - 1):
-        for j in xrange(i + 1, len(paths)):
-            if validate_path_pair(paths[i], (i, ), paths[j], (j, )) != None:
-                cons = validate_path_pair(paths[i], (i, ), paths[j], (j, ))
-                for con in cons:
-                    if len(con[1][0][1]) == 1:
-                        # Node conflict
-                        print con
-                        print 'Robot: %s\ntime: %s\nnode: %s' % (
-                            str(con[0]), str(con[1][0][0]),
-                            str(con[1][0][1][0]))
-                    else:
-                        # Edge conflict
-                        print 'Robot: %s\ntime: %s\n:edge: %s to %s' % (
-                            str(con[0]), str(con[1][0][0]),
-                            str(con[1][0][1][0]),
-                            str(con[1][0][1][1]))
-                return False
-    return True
-
-
 # IMPLICITLY ASSUMES THAT THE GRAPH IS A 4 or 8 connected grid
 def validate_path_pair(path1, rob1, path2, rob2):
     """Takes in a pair of paths, and the robots associated with them,
@@ -740,3 +678,65 @@ def to_joint_path(paths):
         for t in xrange(len(paths[dex])):
             temp[t].extend(paths[dex][t])
     return tuple(temp)
+
+
+def validate_solution(solution):
+    """Takes in a path in the full configuration space and tests whether
+    it is valid.
+
+    Will only check that no collisions exist, and will not
+    check that all edges should exist, due to either connectivity or
+    presence of obstacles
+
+    solution - [[coord1, coord2, ...], ...] list of joint configuration
+               coordinates defining a path
+
+    returns:
+    True if valid, False if robot-robot collisions occur
+    """
+    # Decompose joint path so it can be passed to validate path pair
+    paths = [[(tuple(solution[dex][rob]), ) for dex in xrange(len(solution))]
+               for rob in xrange(len(solution[0]))]
+    for i in xrange(len(paths) - 1):
+        for j in xrange(i + 1, len(paths)):
+            if validate_path_pair(paths[i], (i, ), paths[j], (j, )) != None:
+                return False
+    return True
+
+
+def interactive_validate_solution(solution):
+    """Takes in a path in the full configuration space and tests whether
+    it is valid, printing conflicts to stdout.
+
+    Will only check that no collisions exist, and will not check that
+    all edges should exist, due to either connectivity or presence of
+    obstacles
+
+    solution - [[coord1, coord2, ...], ...] list of joint configuration
+               coordinates defining a path
+
+    returns:
+    True if valid, False if robot-robot collisions occur
+    """
+    # Decompose joint path so it can be passed to validate path pair
+    paths = [[(tuple(solution[dex][rob]), ) for dex in xrange(len(solution))]
+               for rob in xrange(len(solution[0]))]
+    for i in xrange(len(paths) - 1):
+        for j in xrange(i + 1, len(paths)):
+            if validate_path_pair(paths[i], (i, ), paths[j], (j, )) != None:
+                cons = validate_path_pair(paths[i], (i, ), paths[j], (j, ))
+                for con in cons:
+                    if len(con[1][0][1]) == 1:
+                        # Node conflict
+                        print con
+                        print 'Robot: %s\ntime: %s\nnode: %s' % (
+                            str(con[0]), str(con[1][0][0]),
+                            str(con[1][0][1][0]))
+                    else:
+                        # Edge conflict
+                        print 'Robot: %s\ntime: %s\n:edge: %s to %s' % (
+                            str(con[0]), str(con[1][0][0]),
+                            str(con[1][0][1][0]),
+                            str(con[1][0][1][1]))
+                return False
+    return True
