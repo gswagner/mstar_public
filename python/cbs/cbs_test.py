@@ -8,6 +8,7 @@ import cbs
 import constrained_od_mstar
 import constrained_planner
 import ipdb
+import test_utils
 
 """Unit test suite for cbs"""
 
@@ -551,38 +552,7 @@ class TestForwardsConstraintPlanner(unittest.TestCase):
         self.assertTrue(p.get_step((2, 9, 11)) == (2, 8, 12))
 
 
-class TestSum_Of_Costs_Constrained_Forwards_Planner(unittest.TestCase):
 
-    def setUp(self):
-        """Is called before every test function is run"""
-        self.obs_map = [[0 for i in xrange(10)] for j in xrange(10)]
-        self.con = cbs.con_empty_constraint([1])
-
-    def test_delay_cost(self):
-        con = cbs.con_add_node_constraint(self.con, 5, (0, 0))
-
-        p = constrained_planner.Sum_Of_Cost_Constrained_Forwards_Planner(
-            self.obs_map, (0, 0), (0, 0), con)
-        path, cost = p.find_path(time_limit=10)
-        self.assertTrue(cost == 6)
-
-        p = constrained_planner.Constrained_Forwards_Planner(
-            self.obs_map, (0, 0), (0, 0), con)
-        path, cost = p.find_path(time_limit=10)
-        self.assertTrue(cost == 2)
-
-        # Check with two sequential constraints
-        con = cbs.con_add_node_constraint(con, 10, (0, 0))
-
-        p = constrained_planner.Sum_Of_Cost_Constrained_Forwards_Planner(
-            self.obs_map, (0, 0), (0, 0), con)
-        path, cost = p.find_path(time_limit=10)
-        self.assertTrue(cost == 11)
-
-        p = constrained_planner.Constrained_Forwards_Planner(
-            self.obs_map, (0, 0), (0, 0), con)
-        path, cost = p.find_path(time_limit=10)
-        self.assertTrue(cost == 4)
 
 class TestPathValidation(unittest.TestCase):
     # def setUp(self):
@@ -811,14 +781,65 @@ class TestSumOfCostsCBS(unittest.TestCase):
         for x in xrange(1, 18):
             for y in xrange(1, 2):
                 obs_map[x][y] = 1
-        path = cbs.find_path(obs_map, ((0, 0), (17, 0)), ((19, 0), (17, 0)),
-                             meta_agents=False, time_limit=20,
-                             sum_of_costs=False)
-        print len(path)
+        # path = cbs.find_path(obs_map, ((0, 0), (17, 0)), ((19, 0), (17, 0)),
+        #                      meta_agents=False, time_limit=20,
+        #                      sum_of_costs=False)
+        # print len(path)
         path = cbs.find_path(obs_map, ((0, 0), (17, 0)), ((19, 0), (17, 0)),
                              meta_agents=False, time_limit=20,
                              sum_of_costs=True)
-        print len(path)
+        import cPickle
+        cPickle.dump({'path': path, 'obs_map': obs_map, 'init_pos': (),
+                      'goals': ()},
+                     open('temp.dat', 'w'))
+
+
+class TestSum_Of_Costs_Constrained_Forwards_Planner(unittest.TestCase):
+
+    def setUp(self):
+        """Is called before every test function is run"""
+        self.obs_map = [[0 for i in xrange(10)] for j in xrange(10)]
+        self.con = cbs.con_empty_constraint([1])
+
+    def test_delay_cost(self):
+        con = cbs.con_add_node_constraint(self.con, 5, (0, 0))
+
+        p = constrained_planner.Sum_Of_Cost_Constrained_Forwards_Planner(
+            self.obs_map, (0, 0), (0, 0), con)
+        path, cost = p.find_path(time_limit=10)
+        self.assertTrue(cost == 6)
+
+        p = constrained_planner.Constrained_Forwards_Planner(
+            self.obs_map, (0, 0), (0, 0), con)
+        path, cost = p.find_path(time_limit=10)
+        self.assertTrue(cost == 2)
+
+        # Check with two sequential constraints
+        con = cbs.con_add_node_constraint(con, 10, (0, 0))
+
+        p = constrained_planner.Sum_Of_Cost_Constrained_Forwards_Planner(
+            self.obs_map, (0, 0), (0, 0), con)
+        path, cost = p.find_path(time_limit=10)
+        self.assertTrue(cost == 11)
+
+        p = constrained_planner.Constrained_Forwards_Planner(
+            self.obs_map, (0, 0), (0, 0), con)
+        path, cost = p.find_path(time_limit=10)
+        self.assertTrue(cost == 4)
+
+    @test_utils.debug_on()
+    def test_long(self):
+        obs_map = [[0 for i in xrange(20)] for j in xrange(20)]
+        for x in xrange(1, 18):
+            for y in xrange(1, 3):
+                obs_map[x][y] = 1
+        con = cbs.con_empty_constraint([0])
+        for t in xrange(16, 24):
+            con = cbs.con_add_node_constraint(con, t, (17, 0))
+        p = constrained_planner.Constrained_Forwards_Planner(
+            obs_map, (0, 0), (19, 0), con)
+        path, cost = p.find_path(time_limit=10)
+        assert((10, 3)  in path)
 
 
 # @unittest.skip('message goes here')
