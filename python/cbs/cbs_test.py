@@ -387,6 +387,48 @@ class TestConstraintPlanner(unittest.TestCase):
                         path[:3] == ((0, 0), (0, 1), (1, 1)))
 
 
+class TestSumOfCosts_Constrained_Planner(unittest.TestCase):
+    """Tests the constrained planner for the sum of costs metric"""
+
+    @test_utils.debug_on()
+    def test_simple(self):
+        obs_map = [[0 for i in xrange(10)] for j in xrange(10)]
+        con = cbs.con_empty_constraint([0])
+
+        p = constrained_planner.SumOfCosts_Constrained_Planner(
+            obs_map, (0, 0, 0), (0, 0), con)
+        self.assertTrue(p.get_cost((0, 0, 0)) == 0)
+        
+        con = cbs.con_add_node_constraint(con, 1, (0, 0))
+        p = constrained_planner.SumOfCosts_Constrained_Planner(
+            obs_map, (0, 0, 0), (0, 0), con)
+        self.assertTrue(p.get_cost((0, 0, 0)) == 2)
+
+        con = cbs.con_add_node_constraint(con, 10, (0, 0))
+        p = constrained_planner.SumOfCosts_Constrained_Planner(
+            obs_map, (0, 0, 0), (0, 0), con)
+        self.assertTrue(p.get_cost((0, 0, 0)) == 11)
+
+    def test_with_outpaths(self):
+        obs_map = [[0 for i in xrange(10)] for j in xrange(10)]
+        con = cbs.con_empty_constraint([0])
+
+        out_path = (((0, 0), ), ((1, 0), ), ((2, 0), ))
+        p = constrained_planner.SumOfCosts_Constrained_Planner(
+            obs_map, (5, 5, 0), (5, 5), con, out_paths=out_path)
+        self.assertTrue(p.get_cost((5, 5, 0)) == 0)
+
+        con = cbs.con_add_node_constraint(con, 3, (5, 5))
+        p = constrained_planner.SumOfCosts_Constrained_Planner(
+            obs_map, (5, 5, 0), (5, 5), con, out_paths=out_path)
+        self.assertTrue(p.get_cost((5, 5, 0)) == 4)
+
+        # Confirm will not incur extra cost to avoid out path
+        p = constrained_planner.SumOfCosts_Constrained_Planner(
+            obs_map, (3, 0, 0), (0, 0), con, out_paths=out_path)
+        self.assertTrue(p.get_cost((3, 0, 0)) == 3)
+
+
 class TestForwardsConstraintPlanner(unittest.TestCase):
 
     def setUp(self):

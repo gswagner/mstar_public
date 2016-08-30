@@ -78,6 +78,11 @@ class Constrained_Planner(object):
         self.con_max_t = 0
         if self.constraints is not None:
             self.max_t = cbs.con_get_max_time(self.constraints) + 1
+            if self.max_t == 1:
+                # only possible if the constraint is placed at time 0,
+                # which is meaningless, and will only happen if the
+                # planner is passed an empty set of constraints
+                self.max_t = 0
             self.con_max_t = self.max_t
         if self.out_paths is not None:
             # Set max_t one greater than len(self.out_paths) to make
@@ -388,6 +393,37 @@ class Constrained_Planner(object):
         if not node.offset_neighbors:
             self.gen_limited_offset_neighbors(node)
         return sorted(node.offset_neighbors.keys())
+
+
+class SumOfCosts_Constrained_Planner(Constrained_Planner):
+    '''Variant of Constrained_Planner for the sum_of_costs metric
+
+    The sum of cost metric returns the time until the agent reaches its
+    goal for the last time and stays there forever.  Plans backwards in
+    time, which should make things a little easier
+    '''
+
+    def get_transition_cost(self, old_coord, new_coord):
+        '''This plans backwards in time, so cost = 0 if
+        new_coord == goal and old_coord.cost = 0
+
+        old_coord - (x, y, t) source node
+        new_coord - (x, y, t) target node
+
+        returns: (cost, #conflicts)
+        cost - incremental cost of moving from old_coord to new_coord
+        #conflicts - number of conflicts involved in the transition
+        '''
+        step_cost = 1
+        old_node = self.get_node(old_coord)
+        # cost = 0 when robot stays at goal position
+        if old_node.cost[0] == 0 and new_coord[:-1] == self.goal[:-1]:
+            step_cost = 0
+        new_cols = 0
+        if self.out_paths is not None:
+            new_cols = self.col_check.single_bot_outpath_check(
+                new_coord, old_coord, new_coord[-1], self.out_paths)
+        return (step_cost, new_cols)
 
 
 class Constraint_Node:
