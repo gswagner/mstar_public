@@ -60,6 +60,10 @@ class Constrained_Od_Mstar(od_mstar.Od_Mstar):
         self.constraints = constraints
         if self.constraints != None:
             self.max_t = max(cbs.con_get_max_time(constraints)+1,0)
+            if self.max_t == 1:
+                # only possible if the constraint occurs at time 0,
+                # which is meaningless
+                self.max_t = 0
             self.con_max_t = self.max_t
         if self.out_paths != None:
             self.max_t = max(self.max_t,len(self.out_paths))

@@ -259,10 +259,7 @@ class TestConstraintPlanner(unittest.TestCase):
         p = constrained_planner.Constrained_Planner(self.obs_map, [0, 0], 
                                                     [2, 0], self.con)
         n = p.get_neighbors((1, 1, 0))
-        for i in [(0, 1, 1), (1, 2, 1), (2, 1, 1), (1, 0, 1)]:
-            self.assertTrue(i in n)
-        n = p.get_neighbors((1, 1, 1))
-        for i in [(0, 1, 1), (1, 2, 1), (2, 1, 1), (1, 0, 1)]:
+        for i in [(0, 1, 0), (1, 2, 0), (2, 1, 0), (1, 0, 0)]:
             self.assertTrue(i in n)
 
         #Test that constraint violating nodes are correctly rejected
@@ -298,19 +295,19 @@ class TestConstraintPlanner(unittest.TestCase):
         offset_neighbors = p.get_limited_offset_neighbors((5, 5, 0), 0)
         offset_neighbors = [i[-1] for i in offset_neighbors]
         self.assertTrue(len(offset_neighbors) == 1)
-        for i in [(4, 5, 1)]:
+        for i in [(4, 5, 0)]:
             self.assertTrue(i in offset_neighbors)
 
         offset_neighbors = p.get_limited_offset_neighbors((5, 5, 0), 1)
         offset_neighbors = [i[-1] for i in offset_neighbors]
         self.assertTrue(len(offset_neighbors) == 2)
-        for i in [(4, 5, 1), (5, 5, 1)]:
+        for i in [(4, 5, 0), (5, 5, 0)]:
             self.assertTrue(i in offset_neighbors)
 
         offset_neighbors = p.get_limited_offset_neighbors((5, 5, 0), 2)
         offset_neighbors = [i[-1] for i in offset_neighbors]
         self.assertTrue(len(offset_neighbors) == 5)
-        for i in [(4, 5, 1), (5, 5, 1), (5, 4, 1), (5, 6, 1), (6, 5, 1)]:
+        for i in [(4, 5, 0), (5, 5, 0), (5, 4, 0), (5, 6, 0), (6, 5, 0)]:
             self.assertTrue(i in offset_neighbors)
 
     def test_graph_get_limited_offset_neighbors_8_conn(self):
@@ -321,21 +318,21 @@ class TestConstraintPlanner(unittest.TestCase):
         offset_neighbors = p.get_limited_offset_neighbors((5, 5, 0), 0)
         offset_neighbors = [i[-1] for i in offset_neighbors]
         self.assertTrue(len(offset_neighbors) == 3)
-        for i in [(4, 5, 1), (4, 4, 1), (4, 6, 1)]:
+        for i in [(4, 5, 0), (4, 4, 0), (4, 6, 0)]:
             self.assertTrue(i in offset_neighbors)
 
         offset_neighbors = p.get_limited_offset_neighbors((5, 5, 0), 1)
         offset_neighbors = [i[-1] for i in offset_neighbors]
         self.assertTrue(len(offset_neighbors) == 6)
-        for i in [(4, 5, 1), (4, 4, 1), (4, 6, 1), (5, 5, 1), (5, 4, 1), 
-                  (5, 6, 1)]:
+        for i in [(4, 5, 0), (4, 4, 0), (4, 6, 0), (5, 5, 0), (5, 4, 0), 
+                  (5, 6, 0)]:
             self.assertTrue(i in offset_neighbors)
 
         offset_neighbors = p.get_limited_offset_neighbors((5, 5, 0), 2)
         offset_neighbors = [i[-1] for i in offset_neighbors]
         self.assertTrue(len(offset_neighbors) == 9)
-        for i in  [(4, 5, 1), (4, 4, 1), (4, 6, 1), (5, 5, 1), (5, 4, 1), 
-                   (5, 6, 1), (6, 6, 1), (6, 5, 1), (6, 4, 1)]:
+        for i in  [(4, 5, 0), (4, 4, 0), (4, 6, 0), (5, 5, 0), (5, 4, 0), 
+                   (5, 6, 0), (6, 6, 0), (6, 5, 0), (6, 4, 0)]:
             self.assertTrue(i in offset_neighbors)
 
     def test_graph_get_step(self):
@@ -343,8 +340,8 @@ class TestConstraintPlanner(unittest.TestCase):
         p = constrained_planner.Constrained_Planner(self.obs_map, [0, 0], 
                                                     [2, 0], self.con)
         # print p.get_step((0, 0, 0)) == (1, 0, 1)
-        self.assertTrue(p.get_step((0, 0, 0)) == (1, 0, 1))
-        self.assertTrue(p.get_step((1, 0, 1)) == (2, 0, 1))
+        self.assertTrue(p.get_step((0, 0, 0)) == (1, 0, 0))
+        self.assertTrue(p.get_step((1, 0, 0)) == (2, 0, 0))
         con = cbs.con_add_node_constraint(self.con, 13, (9, 9))
         p = constrained_planner.Constrained_Planner(self.obs_map, [0, 0], 
                                                     [2, 0], con)
@@ -549,10 +546,7 @@ class TestForwardsConstraintPlanner(unittest.TestCase):
         p = constrained_planner.Constrained_Planner(self.obs_map, [0, 0], 
                                                     [2, 0], self.con)
         n = p.get_neighbors((1, 1, 0))
-        for i in [(0, 1, 1), (1, 2, 1), (2, 1, 1), (1, 0, 1)]:
-            self.assertTrue(i in n)
-        n = p.get_neighbors((1, 1, 1))
-        for i in [(0, 1, 1), (1, 2, 1), (2, 1, 1), (1, 0, 1)]:
+        for i in [(0, 1, 0), (1, 2, 0), (2, 1, 0), (1, 0, 0)]:
             self.assertTrue(i in n)
 
         #Test that constraint violating nodes are correctly rejected
@@ -586,12 +580,13 @@ class TestForwardsConstraintPlanner(unittest.TestCase):
         p = constrained_planner.Constrained_Planner(self.obs_map, [0, 0], 
                                                     [2, 0], self.con)
         # print p.get_step((0, 0, 0)) == (1, 0, 1)
-        self.assertTrue(p.get_step((0, 0, 0)) == (1, 0, 1))
-        self.assertTrue(p.get_step((1, 0, 1)) == (2, 0, 1))
+        self.assertTrue(p.get_step((0, 0, 0)) == (1, 0, 0))
         con = cbs.con_add_node_constraint(self.con, 13, (9, 9))
         p = constrained_planner.Constrained_Planner(self.obs_map, [0, 0], 
                                                     [2, 0], con)
         self.assertTrue(p.get_step((2, 9, 11)) == (2, 8, 12))
+        self.assertTrue(p.get_step((2, 9, 13)) == (2, 8, 14))
+        self.assertTrue(p.get_step((2, 9, 14)) == (2, 8, 14))
 
 
 
