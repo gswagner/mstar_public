@@ -440,7 +440,15 @@ class Forward_Constraint_Node(object):
         self.closed = False
         self.open = False
         self.h = 0
-        self.t = t
+        # This is the time coordinate of the node.  This has a maximum
+        # value equal to one +  the greater of the length of the out
+        # paths or the time of the last constraint.  This is because
+        # once the rest of the environment is static, time doesn't
+        # matter for the trajectory
+        self.t = t 
+        # holds the current time without max operations.  Only used to
+        # compute the sum_of_costs metric
+        self.time_for_cost = 0
 
     def back_trace_path(self, path=None):
         '''Returns the full path starting at the node from which it is
@@ -646,10 +654,11 @@ class Sum_Of_Cost_Constrained_Forwards_Planner(Constrained_Forwards_Planner):
         returns:
         cost of prev_node
         '''
-        g_value = new_node.t
+        new_node.time_for_cost = prev_node.time_for_cost + 1
+        g_value = new_node.time_for_cost
         if prev_node.coord == self.goal and new_node.coord == self.goal:
-            g_value = prev_node.cost[0]
+            g_value = prev_node.cost
         # Can add booleans to ints, True == 1, False == 0
         out_col = self.col_check.single_bot_outpath_check(
             new_node.coord, prev_node.coord, new_node.t, self.out_paths)
-        return [g_value, prev_node.cost[1] + out_col]
+        return [new_node.time_for_cost, prev_node.cost[1] + out_col]

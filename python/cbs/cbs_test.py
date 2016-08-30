@@ -781,17 +781,14 @@ class TestSumOfCostsCBS(unittest.TestCase):
         for x in xrange(1, 18):
             for y in xrange(1, 2):
                 obs_map[x][y] = 1
-        # path = cbs.find_path(obs_map, ((0, 0), (17, 0)), ((19, 0), (17, 0)),
-        #                      meta_agents=False, time_limit=20,
-        #                      sum_of_costs=False)
-        # print len(path)
+        path = cbs.find_path(obs_map, ((0, 0), (17, 0)), ((19, 0), (17, 0)),
+                             meta_agents=False, time_limit=20,
+                             sum_of_costs=False)
+        self.assertTrue(len(path) == 21)
         path = cbs.find_path(obs_map, ((0, 0), (17, 0)), ((19, 0), (17, 0)),
                              meta_agents=False, time_limit=20,
                              sum_of_costs=True)
-        import cPickle
-        cPickle.dump({'path': path, 'obs_map': obs_map, 'init_pos': (),
-                      'goals': ()},
-                     open('temp.dat', 'w'))
+        self.assertTrue(len(path) == 24)
 
 
 class TestSum_Of_Costs_Constrained_Forwards_Planner(unittest.TestCase):
