@@ -59,19 +59,19 @@ class Constrained_Od_Mstar(od_mstar.Od_Mstar):
         self.con_max_t = 0
         self.constraints = constraints
         if self.constraints != None:
-            self.max_t = max(cbs.con_get_max_time(constraints)+1,0)
+            self.max_t = max(cbs.con_get_max_time(constraints) + 1, 0)
             if self.max_t == 1:
                 # only possible if the constraint occurs at time 0,
                 # which is meaningless
                 self.max_t = 0
             self.con_max_t = self.max_t
         if self.out_paths != None:
-            self.max_t = max(self.max_t,len(self.out_paths))
+            self.max_t = max(self.max_t, len(self.out_paths))
         self.rob_id = cbs.con_get_robots(self.constraints)
         self.heuristic_conf = heuristic_conf
         #Need to have goals in space_time for gen_policy_planner, but need to
         #pass in space-only goals to Od_Mstar
-        self.tgoals = tuple(tuple(i)+(self.max_t,) for i in goals)
+        self.tgoals = tuple(tuple(i) + (self.max_t, ) for i in goals)
         #Store a copy of goals without transforming into space-time, to be
         #used in generating sub planners
         self.non_time_goals = goals
@@ -80,10 +80,10 @@ class Constrained_Od_Mstar(od_mstar.Od_Mstar):
         #Need to delay calling the super constructor until all of the new
         #data fields are filled for use by gen_policy_planenrs
         od_mstar.Od_Mstar.__init__(
-            self,obs_map,goals,recursive,sub_search=sub_search,
-            col_checker=col_checker,rob_id=self.rob_id,inflation =inflation,
-            end_time=end_time,connect_8=conn_8,astar=astar,
-            full_space=full_space,epeastar=epeastar,
+            self, obs_map, goals, recursive, sub_search=sub_search,
+            col_checker=col_checker, rob_id=self.rob_id, inflation =inflation,
+            end_time=end_time, connect_8=conn_8, astar=astar,
+            full_space=full_space, epeastar=epeastar,
             offset_increment=offset_increment)
         self.open_list_key = lambda x:(-x.cost[0]-x.h[0]*self.inflation,
                                         -x.cost[1]-x.h[1])
@@ -306,3 +306,63 @@ def find_path(obs_map,init_pos,goals,constraints,recursive=True,inflation=1.0,
     if get_obj:
         return path,o
     return path,o.get_path_cost()
+
+
+class SumOfCosts_Constrained_OD_rMstar(Constrained_Od_Mstar):
+    '''Variant of Constrained_Od_Mstar using the sum of costs heuristic
+
+    sum of cost heuristic penalyzes the total time until the robot
+    reaches its goal for the final time and waits there until the end of
+    the plan
+    '''
+
+    def gen_policy_planners(self, sub_search, obs_map, goals):
+        '''Creates the individual policies and associated reference keys
+
+        sub_search - dictionary where individual policies will be stored
+        obs_map    - matrix defining world occupancy grid.
+                     0 is free, 1 is obstacle
+        goals      - Here only to match the signature of
+                     Od_Mstar.gen_policy_planners
+        '''
+        goals = self.tgoals
+        self.policy_keys= tuple((cbs.con_subset_robots(self.constraints,(i,)),
+                                 self.path_hash) for i in  self.rob_id)
+        self.sub_search = sub_search
+        if self.sub_search == None:
+            self.sub_search = {}
+        for dex,key in enumerate(self.policy_keys):
+            if not key in self.sub_search:
+                self.sub_search[key] = (
+                    constrained_planner.SumOfCosts_Constrained_Planner(
+                        obs_map, self.heuristic_conf[dex], self.goals[dex],
+                        key[0], out_paths=self.out_paths,
+                        sub_search=self.sub_search, conn_8=self.conn_8,
+                        inflation=self.inflation))
+
+    def get_node(self,coord,standard_node=True):
+        '''Returns the node at coord ((x1,y1),(x2,y2),...), at time t'''
+        if coord in self.graph:
+            # Node already exists.  reset if necessary
+            t_node = self.graph[coord]
+            t_node.reset(self.updated)
+            if not isinstance(tuple, t_node.cost):
+                t_node.cost = (MAX_COST,MAX_COST)
+            return t_node
+        # Need to instantiate the node
+        if standard_node:
+            col = self.col_checker.col_check(coord, self.recursive)
+        else:
+            # Only check for collisions between robots whose move has
+            # been determined
+            col = self.col_checker.col_check(coord[MOVE_TUPLE], self.recursive)
+        free = (len(col) == 0)
+        t_node = mstar_node(coord, free, self.recursive, standard_node)
+        # Cache the resultant col_set
+        t_node.col_set = col
+        t_node.updated = self.updated
+        t_node.h = self.heuristic(coord, standard_node)
+        t_node.cost = (MAX_COST,MAX_COST)
+        # Add the node to the graph
+        self.graph[coord] = t_node
+        return t_node
