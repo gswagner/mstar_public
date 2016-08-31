@@ -298,9 +298,10 @@ def find_path(obs_map, init_pos, goals, constraints, recursive=True,
               conn_8=False, full_space=False, flood_fill_policy=False,
               out_paths=None, epeastar=False, sum_of_costs=False):
     if sum_of_costs:
-        o = SumOfCosts_Constrained_OD_rMstar(
+        assert(epeastar)
+        o = SumOfCosts_Constrained_EPErMstar(
             obs_map, init_pos, goals, constraints, recursive=recursive,
-            inflation=inflation, astar=astar, conn_8=conn_8, epeastar=epeastar,
+            inflation=inflation, astar=astar, conn_8=conn_8,
             full_space=full_space, out_paths=out_paths)
     else:
         o = Constrained_Od_Mstar(obs_map, init_pos, goals, constraints,
@@ -345,8 +346,14 @@ class SumOfCostsNode(od_mstar.mstar_node):
             forwards_ptr=forwards_ptr)
 
 
-class SumOfCosts_Constrained_OD_rMstar(Constrained_Od_Mstar):
+class SumOfCosts_Constrained_EPErMstar(Constrained_Od_Mstar):
     '''Variant of Constrained_Od_Mstar using the sum of costs heuristic
+
+    ONLY SUPPORTS EPErM*.  Performance appears to be the same, and the
+    transition cost function for ODM* doesn't have all the required
+    information for how I set things up.  Thus I would have to
+    modify the get neighbors functions as well, which are ugly and I
+    don't want to play with
 
     sum of cost heuristic penalyzes the total time until the robot
     reaches its goal for the final time and waits there until the end of
@@ -356,6 +363,18 @@ class SumOfCosts_Constrained_OD_rMstar(Constrained_Od_Mstar):
     hack intended to get a paper out the door in really short time.
     IF THIS EVER BECOMES IMPORTANT, REDESIGN!
     '''
+
+    def __init__(self,obs_map,heuristic_conf,goals,constraints,
+                 recursive=True,sub_search=None,out_paths=None,
+                 col_checker=None,inflation=1,end_time=10**15,
+                 conn_8=False,astar=False,full_space=False,
+                 offset_increment=1.0):
+        """Force epeastar=True"""
+        super(SumOfCosts_Constrained_EPErMstar, self).__init__(
+            obs_map, heuristic_conf, goals, constraints, recursive=recursive,
+            sub_search=sub_search, out_paths=out_paths, col_checker=col_checker,
+            inflation=inflation, end_time=end_time, conn_8=conn_8, astar=astar,
+            full_space=full_space, offset_increment=1., epeastar=True)
 
     def gen_policy_planners(self, sub_search, obs_map, goals):
         '''Creates the individual policies and associated reference keys
@@ -413,7 +432,7 @@ class SumOfCosts_Constrained_OD_rMstar(Constrained_Od_Mstar):
         '''Creates a new instance of a subsearch for recursive search
         new_goals       - ((x,y),(x,y),...) new goal configuration
         new_constraints - cbs constraint describing new robot subset'''
-        return SumOfCosts_Constrained_OD_rMstar(
+        return SumOfCosts_Constrained_EPErMstar(
             self.obs_map, new_init, new_goals, new_constraints, self.recursive,
             sub_search=self.sub_search, out_paths=self.out_paths,
             col_checker=self.col_checker, inflation=self.inflation, 
@@ -495,3 +514,4 @@ class SumOfCosts_Constrained_OD_rMstar(Constrained_Od_Mstar):
             new_node.at_goal = tuple(at_goals)
             new_node.time = full_time
         return (cost,cols)
+
