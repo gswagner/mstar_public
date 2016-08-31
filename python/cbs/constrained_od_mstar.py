@@ -6,6 +6,7 @@ import workspace_graph
 import sys
 import constrained_planner
 import hashlib
+import ipdb
 MAX_COST = workspace_graph.MAX_COST
 
 from od_mstar import POSITION, MOVE_TUPLE
@@ -245,8 +246,10 @@ class Constrained_Od_Mstar(od_mstar.Od_Mstar):
         return (cost,cols)
 
     def od_rmstar_transition_cost(self,start_coord,prev_cost,new_coord):
-        '''Computes the transition cost for a single robot in od_rmstar
+        '''Computes the transition cost for a single robot in rmstar
         neighbor generation
+
+        USED BY BOTH EPErM* and ODrM*
         
         start_coord - base position of robots (prior to move assignment)
         prev_cost   - cost of base node
@@ -328,9 +331,15 @@ class SumOfCostsNode(od_mstar.mstar_node):
         # classes in time (i.e. when the environment has ceased changing
         self.time = 0
         # Tracks the most recent time that each robot arrived at its,
-        # goal, used to compute the cost of the node.  This is going to
-        # be set in the main logic.
-        self.at_goal = [-1 for i in xrange(len(coord[POSITION]))]
+        # goal, used to compute the cost of the node.
+        
+        # I apparently had the brilliant idea that standard and
+        # intermediate nodes should have completely different coordinate
+        # formats.  Stupid me.
+        if standard_node:
+            self.at_goal = [0 for i in xrange(len(coord))]
+        else:
+            self.at_goal = [0 for i in xrange(len(coord[POSITION]))]
         super(SumOfCostsNode, self).__init__(
             coord, free, recursive, standard_node, back_ptr=back_ptr,
             forwards_ptr=forwards_ptr)
@@ -372,14 +381,12 @@ class SumOfCosts_Constrained_OD_rMstar(Constrained_Od_Mstar):
                         sub_search=self.sub_search, conn_8=self.conn_8,
                         inflation=self.inflation))
 
-    def get_node(self,coord,standard_node=True):
+    def get_node(self, coord, standard_node=True):
         '''Returns the node at coord ((x1,y1),(x2,y2),...), at time t'''
         if coord in self.graph:
             # Node already exists.  reset if necessary
             t_node = self.graph[coord]
             t_node.reset(self.updated)
-            t_node.time = 0
-            t_node.at_goal = [-1 for i in xrange(len(coord[POSITION]))]
             if not isinstance(t_node.cost, tuple):
                 t_node.cost = (MAX_COST,MAX_COST)
             return t_node
@@ -435,8 +442,47 @@ class SumOfCosts_Constrained_OD_rMstar(Constrained_Od_Mstar):
                 cost += start_node.at_goal[i]
                 at_goals.append(start_node.at_goal[i])
             else:
-                if (new_coord[i][:-1] == self.goals[i][:-1]):
-                    at_goals.append(full_time)
+                at_goals.append(full_time)
+                cost += full_time
+        if self.out_paths != None:
+            for dex in range(len(new_coord)):
+                if self.col_checker.single_bot_outpath_check(
+                    new_coord[dex],start_coord[dex],t,self.out_paths):
+                    cols += 1
+        assert len(at_goals) == len(start_node.at_goal)
+        # Update sum of costs related structure in new coord, if
+        # appropriate
+        if (cost, cols) < new_node.cost:
+            new_node.at_goal = tuple(at_goals)
+            new_node.time = full_time
+        return (cost,cols)
+
+
+    def od_rmstar_transition_cost(self,start_coord,prev_cost,new_coord):
+        '''Computes the transition cost for a single robot in rmstar
+        neighbor generation
+
+        USED BY BOTH EPErM* and ODrM*
+        
+        start_coord - base position of robots (prior to move assignment)
+        prev_cost   - cost of base node
+        new_coord    - proposed move assignmetn'''
+        start_node = self.get_node(start_coord)
+        new_node = self.get_node(new_coord)
+        cost = 0
+        cols = prev_cost[1]
+        t = new_coord[0][-1]
+        # differs from t in that its not capped by when the environment
+        # stops shifting
+        full_time = start_node.time + 1
+        at_goals = []
+        for i in xrange(len(start_coord)):
+            if (start_coord[i][:2] == self.goals[i][:2] and 
+                new_coord[i][:2] == self.goals[i][:2]):
+                cost += start_node.at_goal[i]
+                at_goals.append(start_node.at_goal[i])
+            else:
+                at_goals.append(full_time)
                 cost += full_time
         if self.out_paths != None:
             for dex in range(len(new_coord)):
@@ -446,6 +492,6 @@ class SumOfCosts_Constrained_OD_rMstar(Constrained_Od_Mstar):
         # Update sum of costs related structure in new coord, if
         # appropriate
         if (cost, cols) < new_node.cost:
-            new_node.at_goal = at_goals
+            new_node.at_goal = tuple(at_goals)
             new_node.time = full_time
         return (cost,cols)

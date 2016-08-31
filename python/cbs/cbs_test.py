@@ -1414,6 +1414,27 @@ class TestSumOfCostsEPErMstar(unittest.TestCase):
             sum_of_costs=True, time_limit=10)
         self.assertTrue(cost == 7)
 
+    @test_utils.debug_on()
+    def test_two_robots(self):
+        """Tests a problem that should distinguish between sum of costs
+        metric and my custom cost function
+        """
+        obs_map = [[0 for i in xrange(20)] for j in xrange(20)]
+        for x in xrange(1, 18):
+            for y in xrange(1, 2):
+                obs_map[x][y] = 1
+        con = cbs.con_empty_constraint([0, 1])
+        path, cost = constrained_od_mstar.find_path(
+            obs_map, ((0, 0), (17, 0)), ((19, 0), (17, 0)), con, epeastar=True,
+            time_limit=10, sum_of_costs=False)
+        self.assertTrue(len(path) == 21)
+
+        path, cost = constrained_od_mstar.find_path(
+            obs_map, ((0, 0), (17, 0)), ((19, 0), (17, 0)), con, epeastar=True,
+            time_limit=10, sum_of_costs=True)
+        self.assertTrue(len(path) == 24)
+        self.assertTrue(cost == 23)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Runs test suite for cbs')
