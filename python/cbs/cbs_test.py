@@ -1392,6 +1392,28 @@ class TestSumOfCostsEPErMstar(unittest.TestCase):
         self.assertTrue(cost == 3)
         self.assertTrue(path == (((0, 0), ), ((1, 0), ), ((2, 0), ), ((3, 0), )))
 
+        p_con = cbs.con_add_node_constraint(con, 3, (3, 0))
+        path, cost = constrained_od_mstar.find_path(
+            obs_map, ((0, 0), ), ((3, 0), ), p_con, epeastar=True,
+            sum_of_costs=True, time_limit=10)
+        self.assertTrue(cost == 4)
+
+        # check proper handling of being forced away from the goal
+        p_con = cbs.con_add_node_constraint(con, 6, (3, 0))
+        path, cost = constrained_od_mstar.find_path(
+            obs_map, ((0, 0), ), ((3, 0), ), p_con, epeastar=True,
+            sum_of_costs=True, time_limit=10)
+        self.assertTrue(cost == 7)
+
+        #check proper handling of multiple constraints
+        # check proper handling of being forced away from the goal
+        p_con = cbs.con_add_node_constraint(con, 4, (3, 0))
+        p_con = cbs.con_add_node_constraint(con, 6, (3, 0))
+        path, cost = constrained_od_mstar.find_path(
+            obs_map, ((0, 0), ), ((3, 0), ), p_con, epeastar=True,
+            sum_of_costs=True, time_limit=10)
+        self.assertTrue(cost == 7)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Runs test suite for cbs')
