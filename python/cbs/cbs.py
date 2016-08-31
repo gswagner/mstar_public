@@ -356,7 +356,7 @@ def compute_cost(path):
 
 def find_path(obs_map, init_pos, goals, conn_8=False, meta_agents=False,
               merge_thresh=10, meta_planner='op_decomp', time_limit=5 * 60,
-              sum_of_costs=False):
+              sum_of_costs=False, return_cost=False):
     """Finds a path using CBS or MA-CBS
 
     obs_map      - list of lists specifying obstacle positions, as per
@@ -374,9 +374,12 @@ def find_path(obs_map, init_pos, goals, conn_8=False, meta_agents=False,
     time_limit   - maximum time to search for a solution before raising
                    an error
     sum_of_costs - use sum of costs metric
+    return_cost  - If true, also return cost of path
 
     returns -
     path in the joint configuration graph
+
+    if return_cost is true, returns path, cost
 
     raises:
     NoSolutionError - if there is no solution to the problem
@@ -384,7 +387,7 @@ def find_path(obs_map, init_pos, goals, conn_8=False, meta_agents=False,
     """
     p = CBS_Planner(obs_map, goals, conn_8=conn_8, meta_agents=meta_agents,
                     merge_thresh=merge_thresh, meta_planner=meta_planner,
-                    sum_of_costs=sum_of_costs)
+                    sum_of_costs=sum_of_costs, return_cost=return_cost)
     return p.find_solution(init_pos, time_limit)
 
 
@@ -401,7 +404,7 @@ class CBS_Planner(object):
     """
     def __init__(self, obs_map, goals, sub_search=None, conn_8=False,
                  meta_agents=False, merge_thresh=1, meta_planner='op_decomp',
-                 sum_of_costs=False):
+                 sum_of_costs=False, return_cost=False):
         """
         obs_map      - list of lists specifying obstacle positions,
                        as per workspace graph
@@ -414,12 +417,14 @@ class CBS_Planner(object):
         meta_planner - which coupled planner to use, options are
                        'od_rmstar' and 'epermstar'
         sum_of_costs - use the sum of costs formulation
+        return_cost  - if True, return both the path and its cost
         """
         self.obs_map = obs_map
         self.goals = tuple(map(tuple, goals))
         self.conn_8 = conn_8
         self.meta_agents = meta_agents
         self.merge_thresh = merge_thresh
+        self.return_cost = return_cost
         # Cache result paths for reuse/cost calculation
         # store in the form (cost, path) with the key being the sorted
         # tuple of constraints (sorted to ensure duplicates are found)
@@ -455,6 +460,8 @@ class CBS_Planner(object):
         returns:
         a solution of form [[p11, p12, p13, ,.p1n], ...]
 
+        or path, cost if self.return_cost
+
         raises:
         NoSolutionError - if there is no solution to the problem
         OutOfTimeError  - if could not find a solution in the allowed
@@ -479,7 +486,10 @@ class CBS_Planner(object):
             # Any non-empty list evaluates as True
             if not new_constraints:
                 # Valid
-                return self.construct_joint_path(solution)
+                if self.return_cost:
+                    return self.construct_joint_path(solution), node[0]
+                else:
+                    return self.construct_joint_path(solution)
             # Need to merge the new constraint into the existing
             # constraints, and generate new nodes, branch based on
             # whether we are considering meta-agents
