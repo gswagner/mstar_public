@@ -384,48 +384,6 @@ class TestConstraintPlanner(unittest.TestCase):
                         path[:3] == ((0, 0), (0, 1), (1, 1)))
 
 
-class TestSumOfCosts_Constrained_Planner(unittest.TestCase):
-    """Tests the constrained planner for the sum of costs metric"""
-
-    @test_utils.debug_on()
-    def test_simple(self):
-        obs_map = [[0 for i in xrange(10)] for j in xrange(10)]
-        con = cbs.con_empty_constraint([0])
-
-        p = constrained_planner.SumOfCosts_Constrained_Planner(
-            obs_map, (0, 0, 0), (0, 0), con)
-        self.assertTrue(p.get_cost((0, 0, 0)) == 0)
-        
-        con = cbs.con_add_node_constraint(con, 1, (0, 0))
-        p = constrained_planner.SumOfCosts_Constrained_Planner(
-            obs_map, (0, 0, 0), (0, 0), con)
-        self.assertTrue(p.get_cost((0, 0, 0)) == 2)
-
-        con = cbs.con_add_node_constraint(con, 10, (0, 0))
-        p = constrained_planner.SumOfCosts_Constrained_Planner(
-            obs_map, (0, 0, 0), (0, 0), con)
-        self.assertTrue(p.get_cost((0, 0, 0)) == 11)
-
-    def test_with_outpaths(self):
-        obs_map = [[0 for i in xrange(10)] for j in xrange(10)]
-        con = cbs.con_empty_constraint([0])
-
-        out_path = (((0, 0), ), ((1, 0), ), ((2, 0), ))
-        p = constrained_planner.SumOfCosts_Constrained_Planner(
-            obs_map, (5, 5, 0), (5, 5), con, out_paths=out_path)
-        self.assertTrue(p.get_cost((5, 5, 0)) == 0)
-
-        con = cbs.con_add_node_constraint(con, 3, (5, 5))
-        p = constrained_planner.SumOfCosts_Constrained_Planner(
-            obs_map, (5, 5, 0), (5, 5), con, out_paths=out_path)
-        self.assertTrue(p.get_cost((5, 5, 0)) == 4)
-
-        # Confirm will not incur extra cost to avoid out path
-        p = constrained_planner.SumOfCosts_Constrained_Planner(
-            obs_map, (3, 0, 0), (0, 0), con, out_paths=out_path)
-        self.assertTrue(p.get_cost((3, 0, 0)) == 3)
-
-
 class TestForwardsConstraintPlanner(unittest.TestCase):
 
     def setUp(self):
@@ -808,72 +766,6 @@ class TestCBSPlanner(unittest.TestCase):
             self.assertTrue(cbs.validate_solution(path))
             self.assertTrue(path[-1] == d['goals'])
         print 'time elapsed: %g' %(time.time()-start_time)
-
-
-class TestSumOfCostsCBS(unittest.TestCase):
-    """Tests CBS running the sum-of-costs metric"""
-
-    def test_CBS_sum_of_costs(self):
-        obs_map = [[0 for i in xrange(20)] for j in xrange(20)]
-        for x in xrange(1, 18):
-            for y in xrange(1, 2):
-                obs_map[x][y] = 1
-        path = cbs.find_path(obs_map, ((0, 0), (17, 0)), ((19, 0), (17, 0)),
-                             meta_agents=False, time_limit=20,
-                             sum_of_costs=False)
-        self.assertTrue(len(path) == 21)
-        path = cbs.find_path(obs_map, ((0, 0), (17, 0)), ((19, 0), (17, 0)),
-                             meta_agents=False, time_limit=20,
-                             sum_of_costs=True)
-        self.assertTrue(len(path) == 24)
-
-
-class TestSum_Of_Costs_Constrained_Forwards_Planner(unittest.TestCase):
-
-    def setUp(self):
-        """Is called before every test function is run"""
-        self.obs_map = [[0 for i in xrange(10)] for j in xrange(10)]
-        self.con = cbs.con_empty_constraint([1])
-
-    def test_delay_cost(self):
-        con = cbs.con_add_node_constraint(self.con, 5, (0, 0))
-
-        p = constrained_planner.Sum_Of_Cost_Constrained_Forwards_Planner(
-            self.obs_map, (0, 0), (0, 0), con)
-        path, cost = p.find_path(time_limit=10)
-        self.assertTrue(cost == 6)
-
-        p = constrained_planner.Constrained_Forwards_Planner(
-            self.obs_map, (0, 0), (0, 0), con)
-        path, cost = p.find_path(time_limit=10)
-        self.assertTrue(cost == 2)
-
-        # Check with two sequential constraints
-        con = cbs.con_add_node_constraint(con, 10, (0, 0))
-
-        p = constrained_planner.Sum_Of_Cost_Constrained_Forwards_Planner(
-            self.obs_map, (0, 0), (0, 0), con)
-        path, cost = p.find_path(time_limit=10)
-        self.assertTrue(cost == 11)
-
-        p = constrained_planner.Constrained_Forwards_Planner(
-            self.obs_map, (0, 0), (0, 0), con)
-        path, cost = p.find_path(time_limit=10)
-        self.assertTrue(cost == 4)
-
-    @test_utils.debug_on()
-    def test_long(self):
-        obs_map = [[0 for i in xrange(20)] for j in xrange(20)]
-        for x in xrange(1, 18):
-            for y in xrange(1, 3):
-                obs_map[x][y] = 1
-        con = cbs.con_empty_constraint([0])
-        for t in xrange(16, 24):
-            con = cbs.con_add_node_constraint(con, t, (17, 0))
-        p = constrained_planner.Constrained_Forwards_Planner(
-            obs_map, (0, 0), (19, 0), con)
-        path, cost = p.find_path(time_limit=10)
-        assert((10, 3)  in path)
 
 
 # @unittest.skip('message goes here')
@@ -1377,6 +1269,128 @@ class TestConstrainedEPErMstarPlanner(unittest.TestCase):
             self.assertTrue(cbs.validate_solution(path))
             self.assertTrue(path[-1] == d['goals'])
         print 'time elapsed: %g' %(time.time()-start_time)
+
+
+class TestSumOfCosts_Constrained_Planner(unittest.TestCase):
+    """Tests the constrained planner for the sum of costs metric"""
+
+    @test_utils.debug_on()
+    def test_simple(self):
+        obs_map = [[0 for i in xrange(10)] for j in xrange(10)]
+        con = cbs.con_empty_constraint([0])
+
+        p = constrained_planner.SumOfCosts_Constrained_Planner(
+            obs_map, (0, 0, 0), (0, 0), con)
+        self.assertTrue(p.get_cost((0, 0, 0)) == 0)
+        
+        con = cbs.con_add_node_constraint(con, 1, (0, 0))
+        p = constrained_planner.SumOfCosts_Constrained_Planner(
+            obs_map, (0, 0, 0), (0, 0), con)
+        self.assertTrue(p.get_cost((0, 0, 0)) == 2)
+
+        con = cbs.con_add_node_constraint(con, 10, (0, 0))
+        p = constrained_planner.SumOfCosts_Constrained_Planner(
+            obs_map, (0, 0, 0), (0, 0), con)
+        self.assertTrue(p.get_cost((0, 0, 0)) == 11)
+
+    def test_with_outpaths(self):
+        obs_map = [[0 for i in xrange(10)] for j in xrange(10)]
+        con = cbs.con_empty_constraint([0])
+
+        out_path = (((0, 0), ), ((1, 0), ), ((2, 0), ))
+        p = constrained_planner.SumOfCosts_Constrained_Planner(
+            obs_map, (5, 5, 0), (5, 5), con, out_paths=out_path)
+        self.assertTrue(p.get_cost((5, 5, 0)) == 0)
+
+        con = cbs.con_add_node_constraint(con, 3, (5, 5))
+        p = constrained_planner.SumOfCosts_Constrained_Planner(
+            obs_map, (5, 5, 0), (5, 5), con, out_paths=out_path)
+        self.assertTrue(p.get_cost((5, 5, 0)) == 4)
+
+        # Confirm will not incur extra cost to avoid out path
+        p = constrained_planner.SumOfCosts_Constrained_Planner(
+            obs_map, (3, 0, 0), (0, 0), con, out_paths=out_path)
+        self.assertTrue(p.get_cost((3, 0, 0)) == 3)
+
+
+class TestSum_Of_Costs_Constrained_Forwards_Planner(unittest.TestCase):
+
+    def setUp(self):
+        """Is called before every test function is run"""
+        self.obs_map = [[0 for i in xrange(10)] for j in xrange(10)]
+        self.con = cbs.con_empty_constraint([1])
+
+    def test_delay_cost(self):
+        con = cbs.con_add_node_constraint(self.con, 5, (0, 0))
+
+        p = constrained_planner.Sum_Of_Cost_Constrained_Forwards_Planner(
+            self.obs_map, (0, 0), (0, 0), con)
+        path, cost = p.find_path(time_limit=10)
+        self.assertTrue(cost == 6)
+
+        p = constrained_planner.Constrained_Forwards_Planner(
+            self.obs_map, (0, 0), (0, 0), con)
+        path, cost = p.find_path(time_limit=10)
+        self.assertTrue(cost == 2)
+
+        # Check with two sequential constraints
+        con = cbs.con_add_node_constraint(con, 10, (0, 0))
+
+        p = constrained_planner.Sum_Of_Cost_Constrained_Forwards_Planner(
+            self.obs_map, (0, 0), (0, 0), con)
+        path, cost = p.find_path(time_limit=10)
+        self.assertTrue(cost == 11)
+
+        p = constrained_planner.Constrained_Forwards_Planner(
+            self.obs_map, (0, 0), (0, 0), con)
+        path, cost = p.find_path(time_limit=10)
+        self.assertTrue(cost == 4)
+
+    @test_utils.debug_on()
+    def test_long(self):
+        obs_map = [[0 for i in xrange(20)] for j in xrange(20)]
+        for x in xrange(1, 18):
+            for y in xrange(1, 3):
+                obs_map[x][y] = 1
+        con = cbs.con_empty_constraint([0])
+        for t in xrange(16, 24):
+            con = cbs.con_add_node_constraint(con, t, (17, 0))
+        p = constrained_planner.Constrained_Forwards_Planner(
+            obs_map, (0, 0), (19, 0), con)
+        path, cost = p.find_path(time_limit=10)
+        assert((10, 3)  in path)
+
+
+class TestSumOfCostsCBS(unittest.TestCase):
+    """Tests CBS running the sum-of-costs metric"""
+
+    def test_CBS_sum_of_costs(self):
+        obs_map = [[0 for i in xrange(20)] for j in xrange(20)]
+        for x in xrange(1, 18):
+            for y in xrange(1, 2):
+                obs_map[x][y] = 1
+        path = cbs.find_path(obs_map, ((0, 0), (17, 0)), ((19, 0), (17, 0)),
+                             meta_agents=False, time_limit=20,
+                             sum_of_costs=False)
+        self.assertTrue(len(path) == 21)
+        path = cbs.find_path(obs_map, ((0, 0), (17, 0)), ((19, 0), (17, 0)),
+                             meta_agents=False, time_limit=20,
+                             sum_of_costs=True)
+        self.assertTrue(len(path) == 24)
+
+
+class TestSumOfCostsEPErMstar(unittest.TestCase):
+
+    def test_single_robot(self):
+        """Tests a single robot to confirm the basic code is OK"""
+        obs_map = [[0 for i in xrange(10)] for j in xrange(10)]
+        con = cbs.con_empty_constraint([0])
+
+        path, cost = constrained_od_mstar.find_path(
+            obs_map, ((0, 0), ), ((3, 0), ), con, epeastar=True,
+            sum_of_costs=True, time_limit=10)
+        self.assertTrue(cost == 3)
+        self.assertTrue(path == (((0, 0), ), ((1, 0), ), ((2, 0), ), ((3, 0), )))
 
 
 if __name__ == '__main__':

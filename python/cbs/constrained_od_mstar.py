@@ -8,6 +8,8 @@ import constrained_planner
 import hashlib
 MAX_COST = workspace_graph.MAX_COST
 
+from od_mstar import POSITION, MOVE_TUPLE
+
 class Constrained_Od_Mstar(od_mstar.Od_Mstar):
     '''M* and rM* using operator decomposition instead of basic
     M* as the base computation. Will obey arbitrary low level constraints,
@@ -288,24 +290,50 @@ class Constrained_Od_Mstar(od_mstar.Od_Mstar):
         '''returns the cost of the best path found to the goal'''
         return self.graph[(self.goals)].cost[0]
 
-def find_path(obs_map,init_pos,goals,constraints,recursive=True,inflation=1.0,
-              time_limit=5*60.0,astar=False,get_obj=False,conn_8=False,
-              full_space=False,flood_fill_policy=False,out_paths=None):
-    o = Constrained_Od_Mstar(obs_map,init_pos,goals,constraints,
-                             recursive=recursive,inflation=inflation,
-                             astar=astar,conn_8=conn_8,
-                             full_space=full_space,out_paths=out_paths)
+def find_path(obs_map, init_pos, goals, constraints, recursive=True,
+              inflation=1.0, time_limit=5 * 60.0, astar=False, get_obj=False,
+              conn_8=False, full_space=False, flood_fill_policy=False,
+              out_paths=None, epeastar=False, sum_of_costs=False):
+    if sum_of_costs:
+        o = SumOfCosts_Constrained_OD_rMstar(
+            obs_map, init_pos, goals, constraints, recursive=recursive,
+            inflation=inflation, astar=astar, conn_8=conn_8, epeastar=epeastar,
+            full_space=full_space, out_paths=out_paths)
+    else:
+        o = Constrained_Od_Mstar(obs_map, init_pos, goals, constraints,
+                                 recursive=recursive, inflation=inflation,
+                                 astar=astar, conn_8=conn_8, epeastar=epeastar,
+                                 full_space=full_space, out_paths=out_paths)
     #Need to make sure that the recursion limit is great enough to actually
     #construct the path
-    longest = max([o.sub_search[o.policy_keys[i]].get_cost((init_pos[i][0],init_pos[i][1],0)) 
+    longest = max([o.sub_search[o.policy_keys[i]].get_cost(
+        (init_pos[i][0],init_pos[i][1],0)) 
                    for i in xrange(len(init_pos))])
     #Guess that the longest path will not be any longer than 5 times the 
     #longest individual robot path
     sys.setrecursionlimit(max(sys.getrecursionlimit(),longest*5*len(init_pos)))
     path = o.find_path_time_pad(init_pos,time_limit=time_limit)
     if get_obj:
-        return path,o
-    return path,o.get_path_cost()
+        return path, o
+    return path, o.get_path_cost()
+
+
+class SumOfCostsNode(od_mstar.mstar_node):
+
+    def __init__(self, coord, free, recursive, standard_node, back_ptr=None,
+                 forwards_ptr=None):
+
+        # Track the current time.  This differs from the time coordinate
+        # of the coords, as that is capped to account for equivalence
+        # classes in time (i.e. when the environment has ceased changing
+        self.time = 0
+        # Tracks the most recent time that each robot arrived at its,
+        # goal, used to compute the cost of the node.  This is going to
+        # be set in the main logic.
+        self.at_goal = [-1 for i in xrange(len(coord[POSITION]))]
+        super(SumOfCostsNode, self).__init__(
+            coord, free, recursive, standard_node, back_ptr=back_ptr,
+            forwards_ptr=forwards_ptr)
 
 
 class SumOfCosts_Constrained_OD_rMstar(Constrained_Od_Mstar):
@@ -314,6 +342,10 @@ class SumOfCosts_Constrained_OD_rMstar(Constrained_Od_Mstar):
     sum of cost heuristic penalyzes the total time until the robot
     reaches its goal for the final time and waits there until the end of
     the plan
+
+    I am doing some really, really ugly things here, as this is a dirty
+    hack intended to get a paper out the door in really short time.
+    IF THIS EVER BECOMES IMPORTANT, REDESIGN!
     '''
 
     def gen_policy_planners(self, sub_search, obs_map, goals):
@@ -346,7 +378,9 @@ class SumOfCosts_Constrained_OD_rMstar(Constrained_Od_Mstar):
             # Node already exists.  reset if necessary
             t_node = self.graph[coord]
             t_node.reset(self.updated)
-            if not isinstance(tuple, t_node.cost):
+            t_node.time = 0
+            t_node.at_goal = [-1 for i in xrange(len(coord[POSITION]))]
+            if not isinstance(t_node.cost, tuple):
                 t_node.cost = (MAX_COST,MAX_COST)
             return t_node
         # Need to instantiate the node
@@ -357,12 +391,61 @@ class SumOfCosts_Constrained_OD_rMstar(Constrained_Od_Mstar):
             # been determined
             col = self.col_checker.col_check(coord[MOVE_TUPLE], self.recursive)
         free = (len(col) == 0)
-        t_node = mstar_node(coord, free, self.recursive, standard_node)
+        t_node = SumOfCostsNode(coord, free, self.recursive, standard_node)
         # Cache the resultant col_set
         t_node.col_set = col
         t_node.updated = self.updated
         t_node.h = self.heuristic(coord, standard_node)
         t_node.cost = (MAX_COST,MAX_COST)
+        
         # Add the node to the graph
         self.graph[coord] = t_node
         return t_node
+
+    def create_sub_search(self,new_goals, new_init, new_constraints):
+        '''Creates a new instance of a subsearch for recursive search
+        new_goals       - ((x,y),(x,y),...) new goal configuration
+        new_constraints - cbs constraint describing new robot subset'''
+        return SumOfCosts_Constrained_OD_rMstar(
+            self.obs_map, new_init, new_goals, new_constraints, self.recursive,
+            sub_search=self.sub_search, out_paths=self.out_paths,
+            col_checker=self.col_checker, inflation=self.inflation, 
+            end_time=self.end_time, conn_8=self.conn_8, astar=self.astar,
+            epeastar=self.epeastar, offset_increment=self.offset_increment)
+
+
+    def epeastar_transition_cost(self, start_coord, prev_cost, new_coord):
+        '''Computes the cost of a new node at the specified coordinates, 
+        starting from the given position and cost
+
+        '''
+        start_node = self.get_node(start_coord)
+        new_node = self.get_node(new_coord)
+        cost = 0
+        cols = prev_cost[1]
+        t = new_coord[0][-1]
+        # differs from t in that its not capped by when the environment
+        # stops shifting
+        full_time = start_node.time + 1
+        at_goals = []
+        for i in xrange(len(start_coord)):
+            if (start_coord[i][:-1]== self.goals[i][:-1] and 
+                start_coord[i][:-1] == new_coord[i][:-1]):
+                # Have remained at the goal
+                cost += start_node.at_goal[i]
+                at_goals.append(start_node.at_goal[i])
+            else:
+                if (new_coord[i][:-1] == self.goals[i][:-1]):
+                    at_goals.append(full_time)
+                cost += full_time
+        if self.out_paths != None:
+            for dex in range(len(new_coord)):
+                if self.col_checker.single_bot_outpath_check(
+                    new_coord[dex],start_coord[dex],t,self.out_paths):
+                    cols+=1
+        # Update sum of costs related structure in new coord, if
+        # appropriate
+        if (cost, cols) < new_node.cost:
+            new_node.at_goal = at_goals
+            new_node.time = full_time
+        return (cost,cols)
