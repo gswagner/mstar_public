@@ -27,6 +27,7 @@ import constrained_od_mstar
 import constrained_planner
 import collections
 import time as timer
+import random
 from col_set_addition import NoSolutionError, OutOfTimeError
 
 MAX_COST = 1000000
@@ -688,6 +689,100 @@ class CBS_Planner(object):
             for i in range(len(path), solution_length):
                 path.append(path[-1])
         return tuple(zip(*paths))
+
+
+def permuted_cbs_find_path(
+        obs_map, init_pos, goals, conn_8=False, meta_agents=False,
+        merge_thresh=10, meta_planner='op_decomp', time_limit=5 * 60,
+        sum_of_costs=False, num_restarts=4, seed=10, return_cost=False):
+    """Finds a path using CBS or MA-CBS with randomized restarts
+
+    obs_map      - list of lists specifying obstacle positions, as per
+                   workspace graph
+    init_pos     - [p1, p2, .., pn] list of initial positions
+    goals        - [p1, p2, .., pn] list of goal positions
+    sub_search   - specifies individual robot planners
+    conn_8       - whether to use an 8-connected graph instead of a
+                   4-connected  graph
+    meta_agents  - whether to use meta_agents
+    merge_thresh - number of collisions before merging
+    meta_planner - which coupled planner to use, options are
+                   'op_decomp' (default) 'od_rmstar', 'epea', and
+                   'epermstar'
+    time_limit   - maximum time to search for a solution before raising
+                   an error
+    sum_of_costs - use sum of costs metric
+    num_restarts - how many random restarts to run
+    seed         - seed to use in randomimzed planning.  If None, does
+                   not set the random seed, so python will use clock
+                   time
+    return_cost  - whether to return the cost of the path along with the
+                   path itself
+
+    returns: 
+    path in the joint configuration graph
+
+    if return_cost is true, returns path, cost
+
+    raises:
+    NoSolutionError - if there is no solution to the problem
+    OutOfTimeError  - if could not find a solution in the allowed time
+    """
+    if seed is not None:
+        random.seed(seed)
+    time_per_iter = time_limit / float(num_restarts)
+    planner = CBS_Planner(obs_map, goals, conn_8=conn_8,
+                          meta_agents=meta_agents, return_cost=True,
+                          merge_thresh=merge_thresh, meta_planner=meta_planner,
+                          sum_of_costs=sum_of_costs)
+    new_init_pos = init_pos
+    permutation = range(len(init_pos))
+    for i in xrange(num_restarts):
+        try:
+            path, cost = planner.find_path(new_init_pos, time_per_iter)
+            break
+        except OutOfTimeError:
+            pass
+        permutation = range(len(init_pos))
+        random.shuffle(permutation)
+        new_init_pos = permute(init_pos, permutation)
+    else:
+        raise OutOfTimeError()
+    path = [unpermute_coord(coord) for coord in path]
+    if return_cost:
+        return path, cost
+    return path
+
+
+def permute(iterable, permutation):
+    """Permutes the iterable
+
+    iterable - list/tuple to permute
+    permutation - permutation[i] gives the new position of the original
+                  i'th entry
+
+    return:
+    list with the elements of iterable permuated
+    """
+    temp = sorted([(permutation[i], i) for i in xrange(len(permutation))])
+    out = []
+    for null, val in temp:
+        out.append(iterable[val])
+    return out
+
+
+def unpermute_coord(coord, permutation):
+    """Reverses the permutation of a prob_coord
+
+    prob_coord  - (coord1, coord2, ...) list of robot coordinates to
+                  unpermute
+    permutation - permutation[i] gives the new position of the original
+                  i'th entry
+
+    returns:
+    a new ProbCoord with permutation undone
+    """
+    return [coord[i] for i in permutation]
 
 
 def to_joint_path(paths):
