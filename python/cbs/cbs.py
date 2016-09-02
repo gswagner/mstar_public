@@ -735,20 +735,31 @@ def permuted_cbs_find_path(
                           meta_agents=meta_agents, return_cost=True,
                           merge_thresh=merge_thresh, meta_planner=meta_planner,
                           sum_of_costs=sum_of_costs)
+    policies = planner.sub_search
     new_init_pos = init_pos
+    new_goals = goals
     permutation = range(len(init_pos))
     for i in xrange(num_restarts):
         try:
-            path, cost = planner.find_path(new_init_pos, time_per_iter)
+            path, cost = planner.find_solution(new_init_pos, time_per_iter)
             break
         except OutOfTimeError:
             pass
         permutation = range(len(init_pos))
         random.shuffle(permutation)
         new_init_pos = permute(init_pos, permutation)
+        new_goals = permute(goals, permutation)
+        new_policies = {}
+        for original, new_pos in enumerate(permutation):
+            new_policies[(new_pos, )] = policies[(original, )]
+            planner = CBS_Planner(
+                obs_map, new_goals, conn_8=conn_8, meta_agents=meta_agents,
+                return_cost=True, merge_thresh=merge_thresh,
+                meta_planner=meta_planner, sum_of_costs=sum_of_costs,
+                sub_search=new_policies)
     else:
         raise OutOfTimeError()
-    path = [unpermute_coord(coord) for coord in path]
+        path = [unpermute_coord(coord, permutation) for coord in path]
     if return_cost:
         return path, cost
     return path
