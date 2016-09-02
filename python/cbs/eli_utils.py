@@ -28,6 +28,12 @@ def main():
     parser.add_argument(
         '--merge_thresh', dest='merge_thresh', action='store',
         type=int, default=100, help='Merge threshhold for MA-CBS + EPErM*')
+    parser.add_argument(
+        '--restarts', action='store', type=int, default=1,
+        help='Number of random trials to run.  If 1, use a single run.  ' +
+        'Otherwise split time into n sections, and run each with randomized ' +
+        'robot labeling')
+    sys.setrecursionlimit(9999999)
     args = parser.parse_args()
 
     obs_map, init_pos, goals = read_eli_instance_file(args.test_file)
@@ -36,7 +42,7 @@ def main():
     # seperate process that can kill runaway processes.  Also forces a
     # cleanup after every run
     test = lambda: test_func(obs_map, init_pos, goals, args.merge_thresh,
-                             args.time_limit)
+                             args.time_limit, args.restarts)
     try:
         res = timeout_function(
             test, (),
@@ -54,12 +60,19 @@ def main():
     print res[0]
 
     
-def test_func(obs_map, init_pos, goals, merge_thresh, time_limit):
+def test_func(obs_map, init_pos, goals, merge_thresh, time_limit, restarts):
     start_time = time.clock()
-    path, cost = cbs.find_path(
-        obs_map, init_pos, goals, conn_8=False, meta_agents=True,
-        merge_thresh=merge_thresh, meta_planner='epermstar',
-        time_limit=time_limit, sum_of_costs=True, return_cost=True)
+    if restarts > 1:
+        path, cost = cbs.permuted_cbs_find_path(
+            obs_map, init_pos, goals, conn_8=False, meta_agents=True,
+            merge_thresh=merge_thresh, meta_planner='epermstar',
+            time_limit=time_limit, sum_of_costs=True, return_cost=True,
+            num_restarts=restarts)
+    else:
+        path, cost = cbs.find_path(
+            obs_map, init_pos, goals, conn_8=False, meta_agents=True,
+            merge_thresh=merge_thresh, meta_planner='epermstar',
+            time_limit=time_limit, sum_of_costs=True, return_cost=True)
     end_time = time.clock() - start_time
     return cost, end_time
 
