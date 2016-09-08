@@ -490,7 +490,7 @@ class TestrMstar(unittest.TestCase):
         if not (FULL_TEST or RMSTAR_FULL):
             self.skipTest('Skipped map test for brevity')
         print '\nr_mstar long tests'
-        dat = pickle.load(open('maps/5_40_bots_step_5.map'))
+        dat = pickle.load(open('../maps/5_40_bots_step_5.map'))
         start_time = time.time()
         # Test inlfated
         for i in [0, 30, 60, 101, 131, 141, 151, 161, 200, 250, 300, 350, 400]:
@@ -579,7 +579,7 @@ class TestODrMstar(unittest.TestCase):
         if not (FULL_TEST or OD_RMSTAR_FULL):
             self.skipTest('Skipped map test for brevity')
         print '\nod_rmstar long tests'
-        dat = pickle.load(open('maps/5_40_bots_step_5.map'))
+        dat = pickle.load(open('../maps/5_40_bots_step_5.map'))
         start_time = time.time()
         # Test inlfated
         for i in [0, 30, 60, 101, 131, 141, 151, 161, 200, 250, 300, 350, 400]:
@@ -720,7 +720,7 @@ class TestEPEMstar(unittest.TestCase):
         if not (FULL_TEST or EPERMSTAR_FULL):
             self.skipTest('Skipped map test for brevity')
         print '\nEPErM* long tests'
-        dat = pickle.load(open('maps/5_40_bots_step_5.map'))
+        dat = pickle.load(open('../maps/5_40_bots_step_5.map'))
         start_time = time.time()
         # Test inlfated
         for i in [0, 30, 60, 101, 131, 141, 151, 161, 200, 250, 300, 350,
@@ -752,7 +752,7 @@ class TestEPEMstar(unittest.TestCase):
         if not (FULL_TEST or EPEMSTAR_FULL):
             self.skipTest('Skipped map test for brevity')
         print '\nEPEM* long tests'
-        dat = pickle.load(open('maps/5_40_bots_step_5.map'))
+        dat = pickle.load(open('../maps/5_40_bots_step_5.map'))
         start_time = time.time()
         # Test inlfated
         for i in [0, 30, 60, 101, 131, 141, 151, 161, 200, 250, 300, 350, 400]:

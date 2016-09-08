@@ -755,7 +755,7 @@ class TestCBSPlanner(unittest.TestCase):
             self.skipTest('Skipped map test for brevity')
         print '\ncbs long tests'
         start_time = time.time()
-        dat = pickle.load(open('maps/5_40_bots_step_5.map'))
+        dat = pickle.load(open('../maps/5_40_bots_step_5.map'))
         for i in [0, 30, 60, 101, 130, 151, 200, 230, 250, 300, 330, 350, 380, 
                   400, 450, 451, 531, 532]:#, 534]:
                   #[0, 30, 60, 101, 151, 200, 250, 300, 350]:
@@ -873,7 +873,7 @@ class TestMetaCBSPlanner(unittest.TestCase):
             self.setUp()
             print '\nmeta cbs long tests w/%s' %(planner)
             start_time = time.time()
-            dat = pickle.load(open('maps/5_40_bots_step_5.map'))
+            dat = pickle.load(open('../maps/5_40_bots_step_5.map'))
             # for i in [0, 30, 60, 101, 151, 200, 250, 300, 350]:
             for i in [0, 20, 30, 40, 60, 70, 80, 100, 101, 130, 151, 160, 170, 
                       200, 230, 250, 300, 330, 350, 380, 400, 450, 
@@ -1071,7 +1071,7 @@ class TestConstrainedODrMstarPlanner(unittest.TestCase):
         if not (COD_rMSTAR_FULL or FULL_TEST):
             self.skipTest('Skipped map test for brevity')
         print '\nconstrained ODrM* long tests'
-        dat = pickle.load(open('maps/5_40_bots_step_5.map'))
+        dat = pickle.load(open('../maps/5_40_bots_step_5.map'))
         start_time = time.time()
         for i in [0, 30, 60, 101, 151]:#, 200, 250, 300, 350]:
             print i
@@ -1256,7 +1256,7 @@ class TestConstrainedEPErMstarPlanner(unittest.TestCase):
         if not (CEPErMSTAR_FULL or FULL_TEST):
             self.skipTest('Skipped map test for brevity')
         print '\nconstrained EPErM* long tests'
-        dat = pickle.load(open('maps/5_40_bots_step_5.map'))
+        dat = pickle.load(open('../maps/5_40_bots_step_5.map'))
         start_time = time.time()
         for i in [0, 30, 60, 101, 151, 200, 250]:#, 300]:#, 350]:
             print i
