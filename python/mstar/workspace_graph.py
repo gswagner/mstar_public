@@ -423,6 +423,65 @@ def Workspace_Graph(world_descriptor, goal=None, connect_8=False,
                              road_rules)
 
 
+class KRobustGraph(interface.Graph_Interface):
+    """"Converts a graph for use with 'robust' planning
+
+    The purpose of robust planning is to ensure that no robot
+    can pass through a vertex visited by another robot within
+    k timesteps
+
+    The state of the agent is now specified as a k-step history of
+    previous positions (q1, .., qk), with q1 being the most
+    recent position
+
+    all coordinates should be k-tuples, or else backwards planning
+    for policy computation won't work correctly
+    """
+
+    def __init__(self, graph, k):
+        """
+        graph - the graph describing the actual topology and costs of
+                the space
+        k     - number of time steps to use for robustness criteria
+        """
+        self._graph = graph
+        self._k = k
+
+    def get_edge_cost(self, coord1, coord2):
+        """Returns edge_cost of going from coord1 to coord2
+
+        only incur cost when a transition first occurs, i.e.
+        at q1
+
+        coord1 - (q1, ..., qk) source vertex
+        coord2 - (q1, ..., qk) target vertex of edge
+        """
+        return self._graph.get_edge_cost(coord1[0], coord2[0])
+
+    def get_neighbors(self, coord):
+        """Returns the collision free neighbors of the specified coord
+
+        coord - (q1, ..., qk) source vertex
+
+        returns: list of successors of coord in (q1, ..., qk) form
+        """
+        targets = self._graph.get_in_neighbors(coord[0])
+        return [(t, ) + coord[1:k] for t in targets]
+
+    def get_in_neighbors(self, coord):
+        """Returns the collision free in neighbors of the specified
+        coord (predecessors)
+
+        coord - (q1, ..., qk) source vertex
+
+        returns: list of successors of coord in (q1, ..., qk) form
+        """
+        # Assumes that coord is a tuple, should be as other code assumes
+        # it is hashable
+        targets = self._graph.get_in_neighbors(coord[-1])
+        return [coord[1:] + (t, ) for t in targets]
+
+
 def compute_heuristic_conn_8(init_pos, coord):
     """Returns a heuristic for distance between coord and init_pos
 
