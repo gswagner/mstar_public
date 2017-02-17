@@ -65,7 +65,7 @@ class KRobustPolicy(interface.Graph_Interface):
 
         returns: list of successors of coord in (q1, ..., qk) form
         """
-        targets = self._policy.get_in_neighbors(coord[0])
+        targets = self._policy.get_neighbors(coord[0])
         return [(t, ) + coord[:(self._k - 1)] for t in targets]
 
     def get_graph_size(self, correct_for_size=True):

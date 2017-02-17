@@ -32,13 +32,28 @@ class TestRobustPolicy(unittest.TestCase):
         self.assertEqual(policy.get_step(((0, 0), )), ((0, 0), ))
         self.assertEqual(policy.get_cost(((0, 0), )), 0)
 
-        self.assertEqual(set(policy.get_offsets(((0, ), ))),
+        self.assertEqual(set(policy.get_offsets(((0, 0), ))),
                          set([0, 2]))
         
         self.assertEqual(set(policy.get_offset_neighbors(((0, 0), ), 0)),
                          set([(0, ((0, 0), ))]))
         self.assertEqual(set(policy.get_offset_neighbors(((0, 0), ), 2)),
                          set([(2, ((1, 0), )), (2, ((0, 1), ))]))
+
+    def test_k_2(self):
+        """Tests performance with two step history"""
+        world = [[0 for i in xrange(10)] for j in xrange(10)]
+        k = 2
+        policy = self.build_policy(world, (0, 0), k)
+
+        self.assertEqual(policy.get_step(((0, 0), (0, 0))), ((0, 0), (0, 0)))
+        self.assertEqual(policy.get_step(((1, 0), (2, 0))), ((0, 0), (1, 0)))
+
+        self.assertEqual(policy.get_cost(((1, 0), (0, 0))), 1)
+
+        self.assertEqual(set(policy.get_neighbors(((0, 0), (1, 0)))),
+                         set([((1, 0), (0, 0)), ((0, 1), (0, 0)),
+                              ((0, 0), (0, 0))]))
         
 
 def main():
