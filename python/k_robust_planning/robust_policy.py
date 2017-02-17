@@ -1,3 +1,5 @@
+import interface
+
 class KRobustPolicy(interface.Graph_Interface):
     """"Converts a policy for use with 'robust' planning
 
