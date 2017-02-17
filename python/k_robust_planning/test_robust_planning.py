@@ -9,9 +9,13 @@ import sys
 import workspace_graph
 import robust_policy
 
+import test_utils
 from test_utils import debug_on, DebugMeta, DEBUG, do_cprofile
 
+
 class TestRobustPolicy(unittest.TestCase):
+
+    __metaclass__ = DebugMeta
 
     def build_policy(self, world_descriptor, goal, k):
         return robust_policy.KRobustPolicy(
@@ -20,11 +24,21 @@ class TestRobustPolicy(unittest.TestCase):
                 diagonal_cost=False, makespan=False),
             k)
 
-    def test_simple(self):
+    def test_k_1(self):
+        """Tests performance with single step history"""
         world = [[0 for i in xrange(10)] for j in xrange(10)]
         k = 1
         policy = self.build_policy(world, (0, 0), k)
         self.assertEqual(policy.get_step(((0, 0), )), ((0, 0), ))
+        self.assertEqual(policy.get_cost(((0, 0), )), 0)
+
+        self.assertEqual(set(policy.get_offsets(((0, ), ))),
+                         set([0, 2]))
+        
+        self.assertEqual(set(policy.get_offset_neighbors(((0, 0), ), 0)),
+                         set([(0, ((0, 0), ))]))
+        self.assertEqual(set(policy.get_offset_neighbors(((0, 0), ), 2)),
+                         set([(2, ((1, 0), )), (2, ((0, 1), ))]))
         
 
 def main():
@@ -43,8 +57,8 @@ def main():
     parser.add_argument('--debugon', dest='debug_on', action='store_true',
                         help='Turns on invoking ipdb')
     args = parser.parse_args()
-    global DEBUG
-    DEBUG = args.debug_on
+    test_utils.DEBUG = args.debug_on
+    sys.argv = ['mstar_test.py']
     if args.tests:
         # Have a list of tests that we want to run
         suite = unittest.TestLoader().loadTestsFromNames(

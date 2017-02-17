@@ -35,7 +35,7 @@ class KRobustPolicy(interface.Graph_Interface):
         returns:
         cost for the robot to reach the goal
         """
-        return policy.get_cost(config[0])
+        return self._policy.get_cost(config[0])
 
     def get_edge_cost(self, coord1, coord2):
         """Returns edge_cost of going from coord1 to coord2
@@ -112,4 +112,6 @@ class KRobustPolicy(interface.Graph_Interface):
         return [(off, (t, ) + coord[:(self._k - 1)])
                 for off, t in action_pairs]
 
-
+    def get_offsets(self, config):
+        """Returns the list of possible offsets of the given vertex"""
+        return self._policy.get_offsets(config[0])
