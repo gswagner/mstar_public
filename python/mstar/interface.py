@@ -100,7 +100,23 @@ class Policy_Interface(object):
         raise NotImplementedError
 
     def get_limited_offset_neighbors(self, config, max_offset, min_offset=0):
-        """Returns set of neighbors between the offset arguments"""
+        """Returns set of neighbors between the offset arguments
+
+        More specifically, returns the set of neighbors for which the
+        maximum difference in path cost if passed through is less than
+        the specified value.
+
+        (i.e. if you are forced to pass through coordinate x, instead of
+        the optimal step, what is the difference in cost)?
+
+        coord - coordinates of the node to find neighbors of
+        max_offset - the maximum increase in path cost to encur in
+                     choice of neighbors
+        min_offset - minimum increae in path cost to encur in a neighbor
+
+        returns:
+        a list of tuples of the form (offset, coordinate)
+        """
         raise NotImplementedError
 
     def get_offset_neighbors(self, config, offset):
