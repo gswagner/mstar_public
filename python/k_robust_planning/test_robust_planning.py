@@ -40,6 +40,8 @@ class TestRobustPolicy(unittest.TestCase):
         self.assertEqual(set(policy.get_offset_neighbors(((0, 0), ), 2)),
                          set([(2, ((1, 0), )), (2, ((0, 1), ))]))
 
+        self.assertEqual(policy.get_edge_cost(((0, 0), ), ((0, 0), )), 0)
+
     def test_k_2(self):
         """Tests performance with two step history"""
         world = [[0 for i in xrange(10)] for j in xrange(10)]
