@@ -11,10 +11,10 @@ Overview
 
 Required Packages (Python)
 ----
-* `python-networkx`
-* `python-matplotlib`
-* `python-ipdb`
-
+* `networkx`
+* `matplotlib`
+* `ipdb`
+* `pp`
 
 Required Packages (C++)
 ----
@@ -24,7 +24,7 @@ Required Packages (C++)
 
 Required Packages (Python bindings for C++ code)
 * `cython` (for python bindings.  must be relatively recent, v0.20 works)	
-* 'libpython-dev'
+* `libpython-dev`
 
 Note: libgtest must be made manually.  This requires cmake.  Then run
 * `cd /usr/src/gtest`
