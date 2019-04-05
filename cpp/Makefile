@@ -1,4 +1,4 @@
-CC=g++
+CC=clang++
 #Used for auto generating dependencies
 SHELL= /bin/bash 
 CSTD= -std=c++11
@@ -12,7 +12,7 @@ PROFILEFLAGS := $(CXXFLAGS) -pg
 
 #used for linker, gives libraries to link
 LDLIBS = 
-LDFLAGS = -pthread -lgtest
+LDFLAGS = -pthread -lgtest -lboost_program_options -lyaml-cpp
 LDPROFILEFLAGS := $(LDFLAGS) -pg
 
 CYTHONTOCPPFLAGS :=
@@ -21,9 +21,9 @@ CYTHONFLAGS := -pthread -fPIC -fwrapv -fno-strict-aliasing -I/usr/include/python
 # static libraries I link against
 CYTHONLDFLAGS = -pthread -Wl,--no-as-needed $(LDLIBS) -Wl,--as-needed
 
-EXECUTEABLE=
+EXECUTEABLE=main
 # C++ source files
-SOURCES=policy.cpp col_checker.cpp od_mstar.cpp grid_policy.cpp grid_planning.cpp epemstar.cpp mstar_utils.cpp
+SOURCES=policy.cpp col_checker.cpp od_mstar.cpp grid_policy.cpp grid_planning.cpp epemstar.cpp mstar_utils.cpp main.cc
 HEADERS= 
 
 # Sources for python bindings
